@@ -2,10 +2,12 @@
 #include <cstdlib>
 #include <iostream>
 
-
 Predictor::Predictor()
 {
 	// Invalid default object
 }
 
-Predictor::Predictor(st
+Predictor::Predictor(String anInputFile, String anOutputFile)
+{
+
+}
