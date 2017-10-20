@@ -2,15 +2,20 @@
 #define PREDICTOR_H
 
 #include <string>
+#include <vector>
+
 #define String std::string
+using namespace std;
 
 class Predictor
 {
 	private:
+		vector<long> aaHexAddresses;
+		vector<String> aaPredictions;
+		void branchAlwaysSingleAction(String asAction);
 
 	public:
-		Predictor();
-		Predictor(String asInputFile, String asOutputFile);
+		Predictor(vector<long> aaHexAddress, vector<string> aaPrediction);
 		void branchAlwaysTaken();
 		void branchNeverTaken();
 		void bimodalSingleBit(int anTableSize);
