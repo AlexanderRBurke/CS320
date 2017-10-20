@@ -19,7 +19,7 @@ void Predictor::tournamentPredictor()
 	int lnTableSize = 2048;
 
 	// Create table of size 2048 w/ all values as 3 (Strongly Taken)
-	vector<int> lanTournamentPredictionTable(lnTableSize, 3);
+	vector<int> lanTournamentPredictionTable(lnTableSize, 0);
 	vector<int> lanGsharePredictionTable(lnTableSize, 3);
 	vector<int> lanBimodalPredictionTable(lnTableSize, 3);
 
@@ -36,13 +36,13 @@ void Predictor::tournamentPredictor()
         lbGShareResults = gshareSingular(i, &lanGsharePredictionTable, &lnGshareGlobalHistory, lnTableSize);
         lbBimodalResults = bimodalSingular(i, &lanBimodalPredictionTable, lnTableSize);
 
-        if (lsPrediction >= 2) // GShare
+        if (lsPrediction >= 2) // BiModal
         {
-            if (lbGShareResults)
+            if (lbBimodalResults)
             {
-                // GShare was correct, BiModal was not
+                // BiModal was correct, GShare was not
                 // Was weakly taken, now make strong
-                if (!lbBimodalResults && lsPrediction == 2)
+                if (!lbGShareResults && lsPrediction == 2)
                 {
                     lanTournamentPredictionTable.at(lnTableIndex) = 3;
                 }
@@ -51,21 +51,21 @@ void Predictor::tournamentPredictor()
             }
             else
             {
-                // GShare was wrong, BiModal was correct
+                // BiModal was wrong, GShare was correct
                 // We were wrong, so reduce ST->WT or WT->WNT
-                if (lbBimodalResults)
+                if (lbGShareResults)
                 {
                     lanTournamentPredictionTable.at(lnTableIndex) = (lsPrediction - 1);
                 }
             }
         }
-        else if (lsPrediction >= 0) // BiModal
+        else if (lsPrediction >= 0) // GShare
         {
-            if (lbBimodalResults)
+            if (lbGShareResults)
             {
-                // BiModal was correct, GShare was not
+                // GShare was correct, BiModal was not
                 // Was weakly not taken, now make strong
-                if (!lbGShareResults && lsPrediction == 1)
+                if (!lbBimodalResults && lsPrediction == 1)
                 {
                     lanTournamentPredictionTable.at(lnTableIndex) = 0;
                 }
@@ -74,14 +74,18 @@ void Predictor::tournamentPredictor()
             }
             else
             {
-                // GShare was correct, BiModal was wrong
+                // BiModal was correct, GShare was wrong
                 // We were wrong, so reduce SNT->WNT or WNT->WT
-                if (lbGShareResults)
+                if (lbBimodalResults)
                 {
                     lanTournamentPredictionTable.at(lnTableIndex) = (lsPrediction + 1);
                 }
             }
         }
+
+        /*
+         *
+         */
     }
 
     printf("%ld,%lu;\n", lnTotalCorrect, aaPredictions.size());
