@@ -13,6 +13,7 @@ class Predictor
 		vector<long> aaHexAddresses;
 		vector<String> aaPredictions;
 		void branchAlwaysSingleAction(String asAction);
+		void updateGlobalRegister(int *anGlobalHistory, String asRealResult, int anHistoryLength);
 
 	public:
 		Predictor(vector<long> aaHexAddress, vector<string> aaPrediction);

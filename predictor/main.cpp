@@ -29,6 +29,12 @@ void runBranchPredictions(Predictor aoPredictor)
 	}
 	cout << "\n";
 	*/
+	
+	for (int i = 3; i <= 11; i++)
+	{
+		aoPredictor.gsharePredictor(i);
+	}
+	cout << "\n";
 }
 
 int main(int argc, char *argv[])
