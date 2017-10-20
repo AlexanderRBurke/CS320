@@ -13,7 +13,9 @@ class Predictor
 		vector<long> aaHexAddresses;
 		vector<String> aaPredictions;
 		void branchAlwaysSingleAction(String asAction);
-		void updateGlobalRegister(int *anGlobalHistory, String asRealResult, int anHistoryLength);
+		void updateGlobalRegister(int *anGlobalHistory, const String asRealResult, int anHistoryLength);
+		bool gshareSingular(int anIndexPosition, vector<int> *aapnGsharePredictionTable, int *anpGshareGlobalHistory, int anTableSize);
+        bool bimodalSingular(int anIndexPosition, vector<int> *aapnBimodalPredictionTable, int lnTableSize);
 
 	public:
 		Predictor(vector<long> aaHexAddress, vector<string> aaPrediction);

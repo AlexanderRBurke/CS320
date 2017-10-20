@@ -13,7 +13,6 @@ void runBranchPredictions(Predictor aoPredictor)
 {
 	vector<int> lanTableValues = {16, 32, 128, 256, 512, 1024, 2048};
 
-	/*
 	aoPredictor.branchAlwaysTaken();
 	aoPredictor.branchNeverTaken();
 	
@@ -28,13 +27,14 @@ void runBranchPredictions(Predictor aoPredictor)
 		aoPredictor.bimodalDoubleBit(lanTableValues.at(i));
 	}
 	cout << "\n";
-	*/
 	
 	for (int i = 3; i <= 11; i++)
 	{
 		aoPredictor.gsharePredictor(i);
 	}
 	cout << "\n";
+
+    aoPredictor.tournamentPredictor();
 }
 
 int main(int argc, char *argv[])
