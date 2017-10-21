@@ -13,12 +13,11 @@ Predictor::Predictor(vector<long> _aaHexAddress, vector<String> _aaPrediction) :
 	}
 }
 
-void Predictor::tournamentPredictor()
+pair<long, unsigned long> Predictor::tournamentPredictor()
 {
 	long lnTotalCorrect = 0;
 	int lnTableSize = 2048;
 
-	// Create table of size 2048 w/ all values as 3 (Strongly Taken)
 	vector<int> lanTournamentPredictionTable(lnTableSize, 0);
 	vector<int> lanGsharePredictionTable(lnTableSize, 3);
 	vector<int> lanBimodalPredictionTable(lnTableSize, 3);
@@ -88,7 +87,7 @@ void Predictor::tournamentPredictor()
          */
     }
 
-    printf("%ld,%lu;\n", lnTotalCorrect, aaPredictions.size());
+    return pair<long, unsigned long>(lnTotalCorrect, aaPredictions.size());
 }
 
 bool Predictor::bimodalSingular(int anIndexPosition, vector<int> *aapnBimodalPredictionTable, int lnTableSize)
@@ -193,7 +192,7 @@ bool Predictor::gshareSingular(int anIndexPosition, vector<int> *aapnGsharePredi
     return lsRetVal;
 }
 
-void Predictor::gsharePredictor(int anHistoryLength)
+pair<long, unsigned long> Predictor::gsharePredictor(int anHistoryLength)
 {
 	long lnTotalCorrect = 0;
 	int lnTableSize = 2048;
@@ -251,7 +250,7 @@ void Predictor::gsharePredictor(int anHistoryLength)
 		updateGlobalRegister(&lnGlobalHistory, lsRealResult, anHistoryLength);
 	}
 
-	printf("%ld,%lu; ", lnTotalCorrect, aaPredictions.size());
+	return pair<long, unsigned long>(lnTotalCorrect, aaPredictions.size());
 }
 
 void Predictor::updateGlobalRegister(int *anpGlobalHistory, const String asRealResult, int anHistoryLength)
@@ -274,7 +273,7 @@ void Predictor::updateGlobalRegister(int *anpGlobalHistory, const String asRealR
 	*anpGlobalHistory = lnGlobalHistory;
 }
 
-void Predictor::bimodalDoubleBit(int anTableSize)
+pair<long, unsigned long> Predictor::bimodalDoubleBit(int anTableSize)
 {
 	long lnTotalCorrect = 0;
 
@@ -325,10 +324,10 @@ void Predictor::bimodalDoubleBit(int anTableSize)
 		}
 	}
 
-	printf("%ld,%lu; ", lnTotalCorrect, aaPredictions.size());
+	return pair<long, unsigned long>(lnTotalCorrect, aaPredictions.size());
 }
 
-void Predictor::bimodalSingleBit(int anTableSize)
+pair<long, unsigned long> Predictor::bimodalSingleBit(int anTableSize)
 {
 	long lnTotalCorrect = 0;
 
@@ -369,10 +368,10 @@ void Predictor::bimodalSingleBit(int anTableSize)
 		}
 	}
 
-	printf("%ld,%lu; ", lnTotalCorrect, aaPredictions.size());
+	return pair<long, unsigned long>(lnTotalCorrect, aaPredictions.size());
 }
 
-void Predictor::branchAlwaysSingleAction(String asAction)
+pair<long, unsigned long> Predictor::branchAlwaysSingleAction(String asAction)
 {
 	long lnTotalCorrect = 0;
 
@@ -384,15 +383,15 @@ void Predictor::branchAlwaysSingleAction(String asAction)
 		}
 	}
 
-	printf("%ld,%lu;\n", lnTotalCorrect, aaPredictions.size());
+    return pair<long, unsigned long>(lnTotalCorrect, aaPredictions.size());
 }
 
-void Predictor::branchAlwaysTaken()
+pair<long, unsigned long> Predictor::branchAlwaysTaken()
 {
-	branchAlwaysSingleAction("T");
+	return branchAlwaysSingleAction("T");
 }
 
-void Predictor::branchNeverTaken()
+pair<long, unsigned long> Predictor::branchNeverTaken()
 {
-	branchAlwaysSingleAction("NT");
+	return branchAlwaysSingleAction("NT");
 }

@@ -1,5 +1,7 @@
-all:
-	g++ main.cpp predictor.cpp -o main -std=c++11
+all: predictor
+
+predictor: main.cpp predictor.cpp predictor.h
+	g++ main.cpp predictor.cpp -o predictors -std=c++11
 
 clean:
-	rm main
+	rm -f predictors
