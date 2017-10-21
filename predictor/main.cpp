@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		cerr << "Error opening file " << argv[1] << "\n";
+        exit(3);
 	}
 	
 	Predictor loPredictor(coInputVector, coActionInputVector);
@@ -72,7 +73,9 @@ void runBranchPredictions(Predictor aoPredictor, String asOutputFileName)
     for (int i = 0; i < lanTableValues.size(); i++)
     {
         loRetVal = aoPredictor.bimodalSingleBit(lanTableValues.at(i));
-        loOutputFile << loRetVal.first << "," << loRetVal.second << "; ";
+        loOutputFile << loRetVal.first << "," << loRetVal.second;
+
+        loOutputFile << ((i == lanTableValues.size() - 1) ? ";" : "; ");
     }
     loOutputFile << "\n";
 
@@ -80,7 +83,9 @@ void runBranchPredictions(Predictor aoPredictor, String asOutputFileName)
     for (int i = 0; i < lanTableValues.size(); i++)
     {
         loRetVal = aoPredictor.bimodalDoubleBit(lanTableValues.at(i));
-        loOutputFile << loRetVal.first << "," << loRetVal.second << "; ";
+        loOutputFile << loRetVal.first << "," << loRetVal.second;
+
+        loOutputFile << ((i == lanTableValues.size() - 1) ? ";" : "; ");
     }
     loOutputFile << "\n";
 
@@ -88,13 +93,15 @@ void runBranchPredictions(Predictor aoPredictor, String asOutputFileName)
     for (int i = 3; i <= 11; i++)
     {
         loRetVal = aoPredictor.gsharePredictor(i);
-        loOutputFile << loRetVal.first << "," << loRetVal.second << "; ";
+        loOutputFile << loRetVal.first << "," << loRetVal.second;
+
+        loOutputFile << ((i == 11) ? ";" : "; ");
     }
     loOutputFile << "\n";
 
     // Q6: Tournament Predictor
     loRetVal = aoPredictor.tournamentPredictor();
-    loOutputFile << loRetVal.first << "," << loRetVal.second << ";";
+    loOutputFile << loRetVal.first << "," << loRetVal.second << ";\n";
 
     loOutputFile.close();
 }
