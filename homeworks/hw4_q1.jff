@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><!--Created with JFLAP 6.4.--><structure>
+	<type>fa</type>
+	<automaton>
+		<!--The list of states.-->
+		<state id="0" name="Take">
+			<x>176.0</x>
+			<y>154.0</y>
+			<initial/>
+		</state>
+		<state id="1" name="Take">
+			<x>309.0</x>
+			<y>153.0</y>
+			<label>C=6</label>
+		</state>
+		<state id="2" name="Take">
+			<x>485.0</x>
+			<y>103.0</y>
+			<label>C=5</label>
+		</state>
+		<state id="3" name="Take">
+			<x>590.0</x>
+			<y>152.0</y>
+			<label>C=4</label>
+		</state>
+		<state id="4" name="No Take">
+			<x>266.0</x>
+			<y>313.0</y>
+			<label>C=1</label>
+		</state>
+		<state id="5" name="No Take">
+			<x>498.0</x>
+			<y>307.0</y>
+			<label>C=2</label>
+		</state>
+		<state id="6" name="No Take">
+			<x>739.0</x>
+			<y>329.0</y>
+			<label>C=3</label>
+		</state>
+		<!--The list of transitions.-->
+		<transition>
+			<from>3</from>
+			<to>4</to>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>1</to>
+			<read>Branch Taken</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>4</to>
+			<controlx>126</controlx>
+			<controly>245</controly>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>4</from>
+			<to>5</to>
+			<read>Branch Taken</read>
+		</transition>
+		<transition>
+			<from>5</from>
+			<to>4</to>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>3</from>
+			<to>1</to>
+			<controlx>451</controlx>
+			<controly>212</controly>
+			<read>Branch Taken</read>
+		</transition>
+		<transition>
+			<from>1</from>
+			<to>1</to>
+			<read>Branch Taken</read>
+		</transition>
+		<transition>
+			<from>4</from>
+			<to>4</to>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>1</from>
+			<to>2</to>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>2</from>
+			<to>1</to>
+			<read>Branch Taken</read>
+		</transition>
+		<transition>
+			<from>2</from>
+			<to>3</to>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>6</from>
+			<to>1</to>
+			<read>Branch Taken</read>
+		</transition>
+		<transition>
+			<from>6</from>
+			<to>4</to>
+			<controlx>493</controlx>
+			<controly>439</controly>
+			<read>Not Taken</read>
+		</transition>
+		<transition>
+			<from>5</from>
+			<to>6</to>
+			<read>Branch Taken</read>
+		</transition>
+	</automaton>
+</structure>
