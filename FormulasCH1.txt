@@ -1,0 +1,28 @@
+Performance = 1 / Execution Time
+
+"X is N times faster than Y"
+PerformanceX / PerformanceY = Execution Time Y / Execution Time X = N
+
+Clock period = Duration of a cycle
+Clock frequency / Clock rate = Cycles per second
+
+CPU Time = Clock Cycles * Clock Cycle Time = Clock Cycles / Clock Rate
+
+Clock Cycles = Instruction Count (IC) * Cycles per Instruction (CPI)
+
+CPU Time = IC * CPI * Clock Cycle Time = IC * CPI / Clock Rate
+
+Clock Cycles = SUM(CPIi * ICi)
+
+CPI = Clock Cycles / IC = SUM(CPIi * IC)/SUM(ICs)
+
+CPU Time = Instructions/Program * Clock cycles/Instruction * Seconds/Clock cycle
+
+Power = Capacitive * Voltage^2 * Frequency
+
+Amdahls: T improved = T affected / factor + T unaffected
+
+Millions of Instructions Per Second
+MIPS = IC / Execution Time e6 = IC / (IC*CPI/Clock Rate)e6 = Clock Rate / CPIe6
+
+
