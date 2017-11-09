@@ -13,7 +13,7 @@ using namespace std;
 class Caches
 {
 	public:
-		Caches(vector< pair<char, int> > aooInputs);
+        Caches(vector< pair<char, int> > aooInputs);
         int getCountEntries();
         int directMapped(int anCacheEntries);
         int setAssociative(int anCacheEntries);
