@@ -96,7 +96,7 @@ int Caches::setAssociative(int anAssociativityEntries)
     const int lnCacheEntries = 512 / anAssociativityEntries;
 
     // Row will be [VALID | TAG | timestamp | VALID | TAG | timestamp | ...]
-    const int lnCacheRowLength = 3*anAssociativityEntries;
+    const int lnCacheRowLength = 3 * anAssociativityEntries;
 
     int lnHit = 0;
 
@@ -122,8 +122,7 @@ int Caches::setAssociative(int anAssociativityEntries)
         int lnPTIndex = lnBlockAddress % lnCacheEntries;
 
         // Index.size + Offset.size
-        int lnBitsToOffset = (int) ((log(lnCacheEntries) / log(2)) + (log(BLOCK_SIZE) / log(2)));
-        int lnPTTag = loIterator->second / lnCacheEntries; //>> lnBitsToOffset; // Removes offset from actual address
+        int lnPTTag = loIterator->second / lnCacheEntries; // Removes offset from actual address
 
         // Iterate through each "way" in the cache row
         int *lanPageTableRow = lanPageTable[lnPTIndex];
@@ -162,7 +161,7 @@ int Caches::setAssociative(int anAssociativityEntries)
                 }
             }
 
-            if (!lbEntryInputted)
+            if (! lbEntryInputted)
             {
                 // Find the least recently used and overwrite it
                 int lnLeastRecentlyUsedIndex = 0;
