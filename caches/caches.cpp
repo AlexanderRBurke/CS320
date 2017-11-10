@@ -48,7 +48,7 @@ int Caches::directMapped(int anCacheEntries)
 
         // Index.size + Offset.size
         int lnBitsToOffset = (int)((log(anCacheEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
-        int lnPTTag = loIterator->second >> lnBitsToOffset; // Removes offset from actual address
+        int lnPTTag = loIterator->second / anCacheEntries;
 
         // Page is Valid
         if (lanPageTable[lnPTIndex][0] == 1)
@@ -93,7 +93,7 @@ int Caches::setAssociative(int anAssociativityEntries)
      */
 
     // 2^9 entries w/ 2^5 line size = 16KB cache
-    const int lnCacheEntries = 512;
+    const int lnCacheEntries = 512 / anAssociativityEntries;
 
     // Row will be [VALID | TAG | timestamp | VALID | TAG | timestamp | ...]
     const int lnCacheRowLength = 3*anAssociativityEntries;
@@ -123,7 +123,7 @@ int Caches::setAssociative(int anAssociativityEntries)
 
         // Index.size + Offset.size
         int lnBitsToOffset = (int) ((log(lnCacheEntries) / log(2)) + (log(BLOCK_SIZE) / log(2)));
-        int lnPTTag = loIterator->second >> lnBitsToOffset; // Removes offset from actual address
+        int lnPTTag = loIterator->second / lnCacheEntries; //>> lnBitsToOffset; // Removes offset from actual address
 
         // Iterate through each "way" in the cache row
         int *lanPageTableRow = lanPageTable[lnPTIndex];

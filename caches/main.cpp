@@ -63,7 +63,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
         exit(2);
     }
 
-    /*// Q1: Direct Mapped Cache of size 1KB, 4KB, 16KB, 32KB
+    // Q1: Direct Mapped Cache of size 1KB, 4KB, 16KB, 32KB
     for (int i = 0; i < lanTableRows.size(); i++)
     {
         loRetVal = aoCaches.directMapped(lanTableRows.at(i));
@@ -71,7 +71,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
         loOutputFile << ((i == lanTableRows.size() - 1) ? ";" : "; ");
     }
     loOutputFile << "\n";
-*/
+
     // Q2:
     for (int i = 0; i < lanAssociativity.size(); i++)
     {
@@ -79,7 +79,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
         loOutputFile << loRetVal << "," << aoCaches.getCountEntries();
         loOutputFile << ((i == lanTableRows.size() - 1) ? ";" : "; ");
     }
-    loOutputFile << "\n993999,1122102; 999852,1122102; 999315,1122102; 1000092,1122102;";
+    //loOutputFile << "\n993999,1122102; 999852,1122102; 999315,1122102; 1000092,1122102;";
     loOutputFile << "\n";
 
     loOutputFile.close();
