@@ -79,8 +79,15 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
         loOutputFile << loRetVal << "," << aoCaches.getCountEntries();
         loOutputFile << ((i == lanTableRows.size() - 1) ? ";" : "; ");
     }
-    //loOutputFile << "\n993999,1122102; 999852,1122102; 999315,1122102; 1000092,1122102;";
     loOutputFile << "\n";
+
+    // Q3a:
+    loRetVal = aoCaches.fullAssociativeLRU();
+    loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
+
+    // Q3b:
+    loRetVal = aoCaches.fullAssociativeHCR();
+    loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
 
     loOutputFile.close();
 }

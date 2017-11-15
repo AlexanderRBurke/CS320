@@ -17,6 +17,8 @@ class Caches
         int getCountEntries();
         int directMapped(int);
         int setAssociative(int);
+	    int fullAssociativeLRU();
+        int fullAssociativeHCR();
 
 
     private:
