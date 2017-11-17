@@ -241,8 +241,7 @@ int Caches::fullAssociativeHCR()
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
 
         // Index.size + Offset.size
-        int lnBitsToOffset = (int)((log(lnWayCount)/log(2)) + (log(BLOCK_SIZE)/log(2)));
-        int lnPTTag = loIterator->second >> 5;
+        int lnPTTag = loIterator->second / BLOCK_SIZE;
 
         // Iterate through each "way" in the cache row
         bool lbEntryFound = false;
