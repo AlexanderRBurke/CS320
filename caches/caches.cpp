@@ -48,7 +48,7 @@ int Caches::directMapped(int anCacheEntries)
 
         // Index.size + Offset.size
         int lnBitsToOffset = (int)((log(anCacheEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
-        int lnPTTag = loIterator->second / anCacheEntries;
+        int lnPTTag = loIterator->second >> lnBitsToOffset;
 
         // Page is Valid
         if (lanPageTable[lnPTIndex][0] == 1)
@@ -122,7 +122,8 @@ int Caches::setAssociative(int anAssociativityEntries)
         int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
 
         // Index.size + Offset.size
-        int lnPTTag = loIterator->second / BLOCK_SIZE;
+        int lnBitsToOffset = (int)((log(lnCacheRowEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
+        int lnPTTag = loIterator->second >> lnBitsToOffset;
 
         // Iterate through each "way" in the cache row
         int *lanPageTableRow = lanPageTable[lnPTIndex];
@@ -223,7 +224,7 @@ int Caches::fullAssociativeHCR()
 
     // Dynamic allocation of arrays
     int *lanPageTable = new int[lnCacheRowLength];
-    int *lanHotColdTable = new int[lnWayCount - 1];
+    int *lanHotColdTable = new int[lnWayCount];
 
     for (int i = 0; i < lnCacheRowLength; i++)
     {
@@ -240,11 +241,12 @@ int Caches::fullAssociativeHCR()
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
 
         // Index.size + Offset.size
-        int lnPTTag = loIterator->second / BLOCK_SIZE;
+        int lnBitsToOffset = (int)((log(lnWayCount)/log(2)) + (log(BLOCK_SIZE)/log(2)));
+        int lnPTTag = loIterator->second >> 5;
 
         // Iterate through each "way" in the cache row
         bool lbEntryFound = false;
-        for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / lnWayCount)
+        for (int i = 0; i < lnCacheRowLength; i += 2)
         {
             if (lanPageTable[i] == 1)
             {
@@ -252,42 +254,22 @@ int Caches::fullAssociativeHCR()
                 {
                     lnHit++;
 
-                    /*
-                     * To update here, start with MID_BIT (SIZE/2^1).
-                     * If (index/2)%2 == 0 // even then END_BIT = (index/2)+1
-                     * If (index/2)%2 != 0 // odd then END_BIT = (index/2)
-                     *
-                     * int i = 1;
-                     * while (MID_BIT != END_BIT) {
-                     * if MID_BIT > END_BIT:
-                     *   ARR[MID_BIT] = 0
-                     *   MID_BIT -= SIZE/2^i
-                     * else:
-                     *   ARR[MID_BIT] = 1
-                     *   MID_BIT += SIZE/2^i
-                     * }
-                     */
-
-                    int lnMiddleBit = lnWayCount/2;
-
+                    int lnMiddleBit = lnWayCount/2 - 1;
                     int lnEndBit = i/2;
-                    if ((i/2)%2 == 0)
+                    for (int lnRaise = 2; pow(2, lnRaise) <= lnWayCount; lnRaise++)
                     {
-                        lnEndBit++;
-                    }
+                    //    cout << "Mid = " << lnMiddleBit << " End = " << lnEndBit
+                    //         << " value to add = " << lnWayCount/pow(2, lnRaise) << "\n";
 
-                    for (int lnDivRaiser = 1; lnMiddleBit != lnEndBit; lnDivRaiser++)
-                    {
-                       // cout << lnMiddleBit << " " <<  lnEndBit << "\n";
                         if (lnMiddleBit > lnEndBit)
                         {
                             lanHotColdTable[lnMiddleBit] = 0;
-                            lnMiddleBit -= lnWayCount/pow(2, lnDivRaiser);
+                            lnMiddleBit -= (int)(lnWayCount/pow(2, lnRaise));
                         }
                         else
                         {
                             lanHotColdTable[lnMiddleBit] = 1;
-                            lnMiddleBit += lnWayCount/pow(2, lnDivRaiser);
+                            lnMiddleBit += (int)(lnWayCount/pow(2, lnRaise));
                         }
                     }
 
@@ -311,7 +293,23 @@ int Caches::fullAssociativeHCR()
                 {
                     lanPageTable[i] = 1;
                     lanPageTable[i + 1] = lnPTTag;
-                    //lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
+
+                    int lnMiddleBit = lnWayCount/2 - 1;
+                    int lnEndBit = i/2;
+                    for (int lnRaise = 2; pow(2, lnRaise) <= lnWayCount; lnRaise++)
+                    {
+                        if (lnMiddleBit > lnEndBit)
+                        {
+                            lanHotColdTable[lnMiddleBit] = 0;
+                            lnMiddleBit -= lnWayCount/pow(2, lnRaise);
+                        }
+                        else
+                        {
+                            lanHotColdTable[lnMiddleBit] = 1;
+                            lnMiddleBit += lnWayCount/pow(2, lnRaise);
+                        }
+                    }
+
                     lbEntryInputted = true;
                     break;
                 }
@@ -319,59 +317,27 @@ int Caches::fullAssociativeHCR()
 
             if (! lbEntryInputted)
             {
-
-                /*
-                 * Bit field is
-                 * i = 1;
-                 * 0: size/2^i
-                 * 1: Index(0) +- size/2^i
-                 * 2: Index(1) +- size/2^i
-                 * ...
-                 * n: Index(n-1) +- size/2^(n+1)
-                 */
-
-                // Find the coldest bit and swap that
-                int lnMiddleBit = lnWayCount/2;
-                for (int lnDivRaiser = 0; (lnWayCount / pow(2, lnDivRaiser)) > 0; lnDivRaiser++)
+                int lnMiddleBit = lnWayCount/2 - 1;
+                for (int lnRaise = 2; pow(2, lnRaise) <= lnWayCount; lnRaise++)
                 {
                     if (lanHotColdTable[lnMiddleBit] == 0)
                     {
-                        lnMiddleBit -= lnWayCount / pow(2, lnDivRaiser);
-                    } else
+                        lnMiddleBit -= lnWayCount/pow(2, lnRaise);
+                    }
+                    else
                     {
-                        lnMiddleBit += lnWayCount / pow(2, lnDivRaiser);
+                        lnMiddleBit += lnWayCount/pow(2, lnRaise);
                     }
                 }
 
                 if (lanHotColdTable[lnMiddleBit] == 0)
                 {
-                    // index to trash = lnMiddleBit - 1
-                    lanPageTable[lnMiddleBit - 1] = lnPTTag;
-
+                    lanPageTable[lnMiddleBit] = lnPTTag;
                 }
                 else
                 {
-                    // index to trash = lnMiddleBit
-                    lanPageTable[lnMiddleBit] = lnPTTag;
+                    lanPageTable[lnMiddleBit+1] = lnPTTag;
                 }
-
-                /*
-                // Find the least recently used and overwrite it
-                int lnLeastRecentlyUsedIndex = 0;
-                int lnMinDistance = INT_MAX;
-                for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
-                {
-                    if (lanPageTableRow[i + 2] < lnMinDistance)
-                    {
-                        lnMinDistance = lanPageTableRow[i + 2];
-                        lnLeastRecentlyUsedIndex = i;
-                    }
-                }
-
-                //lanPageTableRow[lnLeastRecentlyUsedIndex] = 1; // Already Valid
-                lanPageTableRow[lnLeastRecentlyUsedIndex + 1] = lnPTTag;
-                lanPageTableRow[lnLeastRecentlyUsedIndex + 2] = distance(gooInputs.begin(), loIterator);
-                 */
             }
         }
     }

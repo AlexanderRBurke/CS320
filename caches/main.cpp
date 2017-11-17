@@ -62,7 +62,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
         cerr << "Unable to open file " << asOutputFileName << "\n";
         exit(2);
     }
-
+/*
     // Q1: Direct Mapped Cache of size 1KB, 4KB, 16KB, 32KB
     for (int i = 0; i < lanTableRows.size(); i++)
     {
@@ -84,7 +84,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     // Q3a:
     loRetVal = aoCaches.fullAssociativeLRU();
     loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
-
+*/
     // Q3b:
     loRetVal = aoCaches.fullAssociativeHCR();
     loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
