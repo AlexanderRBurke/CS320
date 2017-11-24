@@ -41,13 +41,12 @@ int Caches::directMapped(int anCacheEntries)
         }
     }
 
+    // Index.size + Offset.size
+    int lnBitsToOffset = (int)((log(anCacheEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
     for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
     {
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
         int lnPTIndex = lnBlockAddress % anCacheEntries;
-
-        // Index.size + Offset.size
-        int lnBitsToOffset = (int)((log(anCacheEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
         int lnPTTag = loIterator->second >> lnBitsToOffset;
 
         // Page is Valid
@@ -241,7 +240,7 @@ int Caches::fullAssociativeHCR()
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
 
         // Index.size + Offset.size
-        int lnPTTag = loIterator->second / BLOCK_SIZE;
+        int lnPTTag = loIterator->second >> 5;
 
         // Iterate through each "way" in the cache row
         bool lbEntryFound = false;
@@ -255,9 +254,9 @@ int Caches::fullAssociativeHCR()
 
                     int lnMiddleBit = lnWayCount/2 - 1;
                     int lnEndBit = i/2;
-                    for (int lnRaise = 2; pow(2, lnRaise) <= lnWayCount; lnRaise++)
+                    for (int lnRaise = 1; lnMiddleBit > 513; lnRaise++)
                     {
-                    //    cout << "Mid = " << lnMiddleBit << " End = " << lnEndBit
+                   //     cout << "Mid = " << lnMiddleBit << " End = " << lnEndBit
                     //         << " value to add = " << lnWayCount/pow(2, lnRaise) << "\n";
 
                         if (lnMiddleBit > lnEndBit)
@@ -295,7 +294,7 @@ int Caches::fullAssociativeHCR()
 
                     int lnMiddleBit = lnWayCount/2 - 1;
                     int lnEndBit = i/2;
-                    for (int lnRaise = 2; pow(2, lnRaise) <= lnWayCount; lnRaise++)
+                    for (int lnRaise = 2; lnMiddleBit > 513; lnRaise++)
                     {
                         if (lnMiddleBit > lnEndBit)
                         {
@@ -317,7 +316,7 @@ int Caches::fullAssociativeHCR()
             if (! lbEntryInputted)
             {
                 int lnMiddleBit = lnWayCount/2 - 1;
-                for (int lnRaise = 2; pow(2, lnRaise) <= lnWayCount; lnRaise++)
+                for (int lnRaise = 2; lnMiddleBit > 513; lnRaise++)
                 {
                     if (lanHotColdTable[lnMiddleBit] == 0)
                     {
@@ -331,10 +330,12 @@ int Caches::fullAssociativeHCR()
 
                 if (lanHotColdTable[lnMiddleBit] == 0)
                 {
+                    lanHotColdTable[lnMiddleBit] = 1;
                     lanPageTable[lnMiddleBit] = lnPTTag;
                 }
                 else
                 {
+                    lanHotColdTable[lnMiddleBit] = 0;
                     lanPageTable[lnMiddleBit+1] = lnPTTag;
                 }
             }
@@ -347,3 +348,246 @@ int Caches::fullAssociativeHCR()
 
     return lnHit;
 }
+
+int Caches::noAllocWriteMiss(int anAssociativityEntries)
+{
+    // In this design,
+    // if a store instruction misses into the cache,
+    // then the missing line is not written into the cache,
+    // but instead is written directly to memory.
+    // Evaluate this design for the same configurations as in question (2) above.
+
+    // 2^9 entries w/ 2^5 line size = 16KB cache
+    const int lnCacheRowEntries = 512 / anAssociativityEntries;
+
+    // Row will be [VALID | TAG | timestamp | VALID | TAG | timestamp | ...]
+    const int lnCacheRowLength = 3 * anAssociativityEntries;
+
+    int lnHit = 0;
+
+    // Dynamic allocation of 2D array
+    int **lanPageTable = new int*[lnCacheRowEntries];
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        lanPageTable[i] = new int[lnCacheRowLength];
+    }
+
+    // Zero out new 2D array
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        for (int j = 0; j < lnCacheRowLength; j++)
+        {
+            lanPageTable[i][j] = 0;
+        }
+    }
+
+    for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
+    {
+        int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
+        int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
+
+        // Index.size + Offset.size
+        int lnBitsToOffset = (int)((log(lnCacheRowEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
+        int lnPTTag = loIterator->second >> lnBitsToOffset;
+
+        // Iterate through each "way" in the cache row
+        int *lanPageTableRow = lanPageTable[lnPTIndex];
+        bool lbEntryFound = false;
+        for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+        {
+            if (lanPageTableRow[i] == 1)
+            {
+                if (lanPageTableRow[i + 1] == lnPTTag)
+                {
+                    lnHit++;
+                    lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
+                    lbEntryFound = true;
+                    break; // Exit the for() as we have a hit
+                }
+            }
+        }
+
+        // If entry not found, will need to import it to the cache
+        if (! lbEntryFound)
+        {
+            // We will need to now implement the least recently used policy
+            bool lbEntryInputted = false;
+
+            // We will check if it's a store instruction. If it is, skip
+            if (loIterator->first == 'S')
+            {
+                // Store instruction, so write to memory and skip cache
+                lbEntryInputted = true;
+            }
+
+            // If there's an invalid entry, can write in that location
+            for (int i = 0; i < lnCacheRowLength && !lbEntryInputted; i += lnCacheRowLength / anAssociativityEntries)
+            {
+                // Page is invalid, so we can write here
+                if (lanPageTableRow[i] == 0)
+                {
+                    lanPageTableRow[i] = 1;
+                    lanPageTableRow[i + 1] = lnPTTag;
+                    lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
+                    lbEntryInputted = true;
+                    break;
+                }
+            }
+
+            if (! lbEntryInputted)
+            {
+                // Find the least recently used and overwrite it
+                int lnLeastRecentlyUsedIndex = 0;
+                int lnMinDistance = INT_MAX;
+                for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+                {
+                    if (lanPageTableRow[i + 2] < lnMinDistance)
+                    {
+                        lnMinDistance = lanPageTableRow[i + 2];
+                        lnLeastRecentlyUsedIndex = i;
+                    }
+                }
+
+                //lanPageTableRow[lnLeastRecentlyUsedIndex] = 1; // Already Valid
+                lanPageTableRow[lnLeastRecentlyUsedIndex + 1] = lnPTTag;
+                lanPageTableRow[lnLeastRecentlyUsedIndex + 2] = distance(gooInputs.begin(), loIterator);
+            }
+        }
+    }
+
+    // Free dynamic 2D array
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        delete[] lanPageTable[i];
+    }
+    delete[] lanPageTable;
+
+    return lnHit;
+}
+
+int Caches::setAssociativePrefetching(int anAssociativityEntries)
+{
+    // In this design,
+    // the next memory line will be brought into the cache with every cache access.
+    // For example, if current access is to line X,
+    // then line (x+1) is also brought into the cache,
+    // replacing the cache’s previous content.
+    // Evaluate this design for the same configurations as in question (2) above.
+
+    // 2^9 entries w/ 2^5 line size = 16KB cache
+    const int lnCacheRowEntries = 512 / anAssociativityEntries;
+
+    // Row will be [VALID | TAG | timestamp | VALID | TAG | timestamp | ...]
+    const int lnCacheRowLength = 3 * anAssociativityEntries;
+
+    int lnHit = 0;
+
+    // Dynamic allocation of 2D array
+    int **lanPageTable = new int*[lnCacheRowEntries];
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        lanPageTable[i] = new int[lnCacheRowLength];
+    }
+
+    // Zero out new 2D array
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        for (int j = 0; j < lnCacheRowLength; j++)
+        {
+            lanPageTable[i][j] = 0;
+        }
+    }
+
+    int lnBitsToOffset = (int)((log(lnCacheRowEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
+    for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
+    {
+        int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
+        int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
+        int lnPTTag = loIterator->second >> lnBitsToOffset;
+
+        int lnPreFetchBlockAddress = lnBlockAddress + 1;
+        int lnPreFetchPTIndex = lnPreFetchBlockAddress % lnCacheRowEntries;
+        int lnPreFetchPTTag = loIterator->second >> lnBitsToOffset;
+
+        // Iterate through each "way" in the cache row
+        int *lanPageTableRow = lanPageTable[lnPTIndex];
+        bool lbEntryFound = false;
+        for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+        {
+            if (lanPageTableRow[i] == 1)
+            {
+                if (lanPageTableRow[i + 1] == lnPTTag)
+                {
+                    lnHit++;
+                    lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
+                    lbEntryFound = true;
+
+                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i] = 1;
+                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+1] = lnPreFetchPTTag;
+                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+2] = distance(gooInputs.begin(), loIterator);
+
+                    break; // Exit the for() as we have a hit
+                }
+            }
+        }
+
+        // If entry not found, will need to import it to the cache
+        if (! lbEntryFound)
+        {
+            // We will need to now implement the least recently used policy
+            bool lbEntryInputted = false;
+
+            // If there's an invalid entry, can write in that location
+            for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+            {
+                // Page is invalid, so we can write here
+                if (lanPageTableRow[i] == 0)
+                {
+                    lanPageTableRow[i] = 1;
+                    lanPageTableRow[i + 1] = lnPTTag;
+                    lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
+
+                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i] = 1;
+                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+1] = lnPreFetchPTTag;
+                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+2] = distance(gooInputs.begin(), loIterator);
+                    lbEntryInputted = true;
+                    break;
+                }
+            }
+
+            if (! lbEntryInputted)
+            {
+                // Find the least recently used and overwrite it
+                int lnLeastRecentlyUsedIndex = 0;
+                int lnMinDistance = INT_MAX;
+                for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+                {
+                    if (lanPageTableRow[i + 2] < lnMinDistance)
+                    {
+                        lnMinDistance = lanPageTableRow[i + 2];
+                        lnLeastRecentlyUsedIndex = i;
+                    }
+                }
+
+                //lanPageTableRow[lnLeastRecentlyUsedIndex] = 1; // Already Valid
+                lanPageTableRow[lnLeastRecentlyUsedIndex + 1] = lnPTTag;
+                lanPageTableRow[lnLeastRecentlyUsedIndex + 2] = distance(gooInputs.begin(), loIterator);
+
+                lanPageTable[(lnPTIndex+1)%lnCacheRowEntries][lnLeastRecentlyUsedIndex] = 1;
+                lanPageTable[(lnPTIndex+1)%lnCacheRowEntries][lnLeastRecentlyUsedIndex+1] = lnPreFetchPTTag;
+                lanPageTable[(lnPTIndex+1)%lnCacheRowEntries][lnLeastRecentlyUsedIndex+2] = distance(gooInputs.begin(), loIterator);
+            }
+        }
+    }
+
+    // Free dynamic 2D array
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        delete[] lanPageTable[i];
+    }
+    delete[] lanPageTable;
+
+    return lnHit;
+
+}
+

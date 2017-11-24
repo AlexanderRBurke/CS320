@@ -19,7 +19,8 @@ class Caches
         int setAssociative(int);
 	    int fullAssociativeLRU();
         int fullAssociativeHCR();
-
+		int noAllocWriteMiss(int);
+        int setAssociativePrefetching(int);
 
     private:
         vector< pair<char, int> > gooInputs;

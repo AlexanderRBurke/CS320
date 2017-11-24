@@ -1,7 +1,7 @@
 all: simulator
 
 run: cache-sim simulator
-	./cache-sim trace3.txt DEBUG.txt
+	./cache-sim trace2.txt DEBUG.txt
 
 gdb: cache-sim simulator
 	sudo gdb ./cache-sim
