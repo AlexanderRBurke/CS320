@@ -107,6 +107,15 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     }
     loOutputFile << "\n";
 
+    // Q6:
+    for (int i = 0; i < lanAssociativity.size(); i++)
+    {
+        loRetVal = aoCaches.setAssociativePreOnMiss(lanAssociativity.at(i));
+        loOutputFile << loRetVal << "," << aoCaches.getCountEntries();
+        loOutputFile << ((i == lanTableRows.size() - 1) ? ";" : "; ");
+    }
+    loOutputFile << "\n";
+
 
     loOutputFile.close();
 }

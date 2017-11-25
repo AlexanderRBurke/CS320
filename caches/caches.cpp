@@ -216,129 +216,72 @@ int Caches::fullAssociativeHCR()
     // 2^9 entries w/ 2^5 line size = 16KB cache
     const int lnWayCount = 512;
 
-    // Row will be [VALID | TAG | VALID | TAG | ...]
-    const int lnCacheRowLength = 2 * lnWayCount;
-
     int lnHit = 0;
 
     // Dynamic allocation of arrays
-    int *lanPageTable = new int[lnCacheRowLength];
+    int *lanPageTable = new int[lnWayCount];
     int *lanHotColdTable = new int[lnWayCount];
-
-    for (int i = 0; i < lnCacheRowLength; i++)
-    {
-        lanPageTable[i] = 0;
-    }
 
     for (int i = 0; i < lnWayCount; i++)
     {
+        lanPageTable[i] = 0;
         lanHotColdTable[i] = 0;
     }
 
     for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
     {
-        int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
+        int lnPTTag = loIterator->second >> (int)(log2(BLOCK_SIZE));
 
-        // Index.size + Offset.size
-        int lnPTTag = loIterator->second >> 5;
-
-        // Iterate through each "way" in the cache row
+        // Iterate through each "way" in the cache
         bool lbEntryFound = false;
-        for (int i = 0; i < lnCacheRowLength; i += 2)
+        for (int i = 0; i < lnWayCount; i++)
         {
-            if (lanPageTable[i] == 1)
+            if (lanPageTable[i] == lnPTTag)
             {
-                if (lanPageTable[i + 1] == lnPTTag)
+                lnHit++;
+
+                int lnParent = 0;
+                for (int lnRaise = 0; lnRaise < log2(lnWayCount); lnRaise++)
                 {
-                    lnHit++;
+                    int lnOldValue = (i/(lnWayCount/(2 << lnRaise))) % 2;
 
-                    int lnMiddleBit = lnWayCount/2 - 1;
-                    int lnEndBit = i/2;
-                    for (int lnRaise = 1; lnMiddleBit > 513; lnRaise++)
+                    if (lnOldValue == 0)
                     {
-                   //     cout << "Mid = " << lnMiddleBit << " End = " << lnEndBit
-                    //         << " value to add = " << lnWayCount/pow(2, lnRaise) << "\n";
-
-                        if (lnMiddleBit > lnEndBit)
-                        {
-                            lanHotColdTable[lnMiddleBit] = 0;
-                            lnMiddleBit -= (int)(lnWayCount/pow(2, lnRaise));
-                        }
-                        else
-                        {
-                            lanHotColdTable[lnMiddleBit] = 1;
-                            lnMiddleBit += (int)(lnWayCount/pow(2, lnRaise));
-                        }
+                        lanHotColdTable[lnParent] = 1;
+                        lnParent = (2 * lnParent) + 1;
                     }
-
-                    lbEntryFound = true;
-                    break; // Exit the for() as we have a hit
+                    else
+                    {
+                        lanHotColdTable[lnParent] = 0;
+                        lnParent = 2 * (lnParent + 1);
+                    }
                 }
+
+                lbEntryFound = true;
+                break; // Exit the for() as we have a hit
             }
         }
 
         // If entry not found, will need to import it to the cache
         if (! lbEntryFound)
         {
-            // We will need to now implement the least recently used policy
-            bool lbEntryInputted = false;
-
-            // If there's an invalid entry, can write in that location
-            for (int i = 0; i < lnCacheRowLength; i += 2)
+            int lnIndexToReplace = 0;
+            for (int i = 0; i < log2(lnWayCount); i++)
             {
-                // Page is invalid, so we can write here
-                if (lanPageTable[i] == 0)
+                if (lanHotColdTable[lnIndexToReplace] == 0)
                 {
-                    lanPageTable[i] = 1;
-                    lanPageTable[i + 1] = lnPTTag;
-
-                    int lnMiddleBit = lnWayCount/2 - 1;
-                    int lnEndBit = i/2;
-                    for (int lnRaise = 2; lnMiddleBit > 513; lnRaise++)
-                    {
-                        if (lnMiddleBit > lnEndBit)
-                        {
-                            lanHotColdTable[lnMiddleBit] = 0;
-                            lnMiddleBit -= lnWayCount/pow(2, lnRaise);
-                        }
-                        else
-                        {
-                            lanHotColdTable[lnMiddleBit] = 1;
-                            lnMiddleBit += lnWayCount/pow(2, lnRaise);
-                        }
-                    }
-
-                    lbEntryInputted = true;
-                    break;
-                }
-            }
-
-            if (! lbEntryInputted)
-            {
-                int lnMiddleBit = lnWayCount/2 - 1;
-                for (int lnRaise = 2; lnMiddleBit > 513; lnRaise++)
-                {
-                    if (lanHotColdTable[lnMiddleBit] == 0)
-                    {
-                        lnMiddleBit -= lnWayCount/pow(2, lnRaise);
-                    }
-                    else
-                    {
-                        lnMiddleBit += lnWayCount/pow(2, lnRaise);
-                    }
-                }
-
-                if (lanHotColdTable[lnMiddleBit] == 0)
-                {
-                    lanHotColdTable[lnMiddleBit] = 1;
-                    lanPageTable[lnMiddleBit] = lnPTTag;
+                    lanHotColdTable[lnIndexToReplace] = 1;
+                    lnIndexToReplace = (2 * lnIndexToReplace) + 1;
                 }
                 else
                 {
-                    lanHotColdTable[lnMiddleBit] = 0;
-                    lanPageTable[lnMiddleBit+1] = lnPTTag;
+                    lanHotColdTable[lnIndexToReplace] = 0;
+                    lnIndexToReplace = 2 * (lnIndexToReplace + 1);
                 }
             }
+
+            lnIndexToReplace = lnIndexToReplace + 1 - lnWayCount;
+            lanPageTable[lnIndexToReplace] = lnPTTag;
         }
     }
 
@@ -477,8 +420,8 @@ int Caches::setAssociativePrefetching(int anAssociativityEntries)
     // 2^9 entries w/ 2^5 line size = 16KB cache
     const int lnCacheRowEntries = 512 / anAssociativityEntries;
 
-    // Row will be [VALID | TAG | timestamp | VALID | TAG | timestamp | ...]
-    const int lnCacheRowLength = 3 * anAssociativityEntries;
+    // Row will be [TAG | timestamp | TAG | timestamp | ...]
+    const int lnCacheRowLength = 2 * anAssociativityEntries;
 
     int lnHit = 0;
 
@@ -489,94 +432,91 @@ int Caches::setAssociativePrefetching(int anAssociativityEntries)
         lanPageTable[i] = new int[lnCacheRowLength];
     }
 
-    // Zero out new 2D array
+    // Fill in new 2D Array
+    auto loIterator = gooInputs.begin();
     for (int i = 0; i < lnCacheRowEntries; i++)
     {
-        for (int j = 0; j < lnCacheRowLength; j++)
+        for (int j = 0; j < lnCacheRowLength; j += 2)
         {
-            lanPageTable[i][j] = 0;
+            lanPageTable[i][j] = loIterator->second;
+            lanPageTable[i][j+1] = 0;
+            loIterator++;
         }
     }
 
-    int lnBitsToOffset = (int)((log(lnCacheRowEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
+    int lnBitsToOffset = (int)(log2(lnCacheRowEntries) + log2(BLOCK_SIZE));
     for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
     {
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
         int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
         int lnPTTag = loIterator->second >> lnBitsToOffset;
 
-        int lnPreFetchBlockAddress = lnBlockAddress + 1;
-        int lnPreFetchPTIndex = lnPreFetchBlockAddress % lnCacheRowEntries;
-        int lnPreFetchPTTag = loIterator->second >> lnBitsToOffset;
+        int lnPreFetchPTIndex = (lnBlockAddress + 1) % lnCacheRowEntries;
+        int lnPreFetchPTTag = (loIterator->second + BLOCK_SIZE) >> lnBitsToOffset;
 
         // Iterate through each "way" in the cache row
         int *lanPageTableRow = lanPageTable[lnPTIndex];
+        int *lanPreFetchPTR = lanPageTable[lnPreFetchPTIndex];
+
         bool lbEntryFound = false;
-        for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+        bool lbPreFetchEntryFound = false;
+
+        for (int i = 0; i < lnCacheRowLength; i += 2)
         {
-            if (lanPageTableRow[i] == 1)
+            if (lanPageTableRow[i] == lnPTTag)
             {
-                if (lanPageTableRow[i + 1] == lnPTTag)
-                {
-                    lnHit++;
-                    lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
-                    lbEntryFound = true;
+                lnHit++;
+                lanPageTableRow[i + 1] = distance(gooInputs.begin(), loIterator);
+                lbEntryFound = true;
+                break; // Exit the for() as we have a hit
+            }
+        }
 
-                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i] = 1;
-                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+1] = lnPreFetchPTTag;
-                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+2] = distance(gooInputs.begin(), loIterator);
-
-                    break; // Exit the for() as we have a hit
-                }
+        for (int i = 0; i < lnCacheRowLength; i += 2)
+        {
+            if (lanPreFetchPTR[i] == lnPreFetchPTTag)
+            {
+                lanPreFetchPTR[i + 1] = distance(gooInputs.begin(), loIterator);
+                lbPreFetchEntryFound = true;
+                break;
             }
         }
 
         // If entry not found, will need to import it to the cache
         if (! lbEntryFound)
         {
-            // We will need to now implement the least recently used policy
-            bool lbEntryInputted = false;
+            int lnIndexToReplaceValue = lanPageTableRow[1];
+            int lnIndexToReplace = 0;
 
-            // If there's an invalid entry, can write in that location
-            for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+            for (int i = 0; i < lnCacheRowLength; i += 2)
             {
-                // Page is invalid, so we can write here
-                if (lanPageTableRow[i] == 0)
+                if (lanPageTableRow[i+1] < lnIndexToReplaceValue)
                 {
-                    lanPageTableRow[i] = 1;
-                    lanPageTableRow[i + 1] = lnPTTag;
-                    lanPageTableRow[i + 2] = distance(gooInputs.begin(), loIterator);
-
-                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i] = 1;
-                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+1] = lnPreFetchPTTag;
-                    lanPageTable[((lnPTIndex+1)%lnCacheRowEntries)][i+2] = distance(gooInputs.begin(), loIterator);
-                    lbEntryInputted = true;
-                    break;
+                    lnIndexToReplaceValue = lanPageTableRow[i+1];
+                    lnIndexToReplace = i;
                 }
             }
 
-            if (! lbEntryInputted)
+            lanPageTableRow[lnIndexToReplace] = lnPTTag;
+            lanPageTableRow[lnIndexToReplace + 1] = distance(gooInputs.begin(), loIterator);
+        }
+
+        if (! lbPreFetchEntryFound)
+        {
+            int lnIndexToReplaceValue = lanPreFetchPTR[1];
+            int lnIndexToReplace = 0;
+
+            for (int i = 0; i < lnCacheRowLength; i += 2)
             {
-                // Find the least recently used and overwrite it
-                int lnLeastRecentlyUsedIndex = 0;
-                int lnMinDistance = INT_MAX;
-                for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
+                if (lanPreFetchPTR[i+1] < lnIndexToReplaceValue)
                 {
-                    if (lanPageTableRow[i + 2] < lnMinDistance)
-                    {
-                        lnMinDistance = lanPageTableRow[i + 2];
-                        lnLeastRecentlyUsedIndex = i;
-                    }
+                    lnIndexToReplaceValue = lanPreFetchPTR[i+1];
+                    lnIndexToReplace = i;
                 }
-
-                //lanPageTableRow[lnLeastRecentlyUsedIndex] = 1; // Already Valid
-                lanPageTableRow[lnLeastRecentlyUsedIndex + 1] = lnPTTag;
-                lanPageTableRow[lnLeastRecentlyUsedIndex + 2] = distance(gooInputs.begin(), loIterator);
-
-                lanPageTable[(lnPTIndex+1)%lnCacheRowEntries][lnLeastRecentlyUsedIndex] = 1;
-                lanPageTable[(lnPTIndex+1)%lnCacheRowEntries][lnLeastRecentlyUsedIndex+1] = lnPreFetchPTTag;
-                lanPageTable[(lnPTIndex+1)%lnCacheRowEntries][lnLeastRecentlyUsedIndex+2] = distance(gooInputs.begin(), loIterator);
             }
+
+            lanPreFetchPTR[lnIndexToReplace] = lnPreFetchPTTag;
+            lanPreFetchPTR[lnIndexToReplace + 1] = distance(gooInputs.begin(), loIterator);
         }
     }
 
@@ -588,6 +528,119 @@ int Caches::setAssociativePrefetching(int anAssociativityEntries)
     delete[] lanPageTable;
 
     return lnHit;
-
 }
 
+int Caches::setAssociativePreOnMiss(int anAssociativityEntries)
+{
+    // 2^9 entries w/ 2^5 line size = 16KB cache
+    const int lnCacheRowEntries = 512 / anAssociativityEntries;
+
+    // Row will be [TAG | timestamp | TAG | timestamp | ...]
+    const int lnCacheRowLength = 2 * anAssociativityEntries;
+
+    int lnHit = 0;
+
+    // Dynamic allocation of 2D array
+    int **lanPageTable = new int*[lnCacheRowEntries];
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        lanPageTable[i] = new int[lnCacheRowLength];
+    }
+
+    // Fill in new 2D Array
+    auto loIterator = gooInputs.begin();
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        for (int j = 0; j < lnCacheRowLength; j += 2)
+        {
+            lanPageTable[i][j] = loIterator->second;
+            lanPageTable[i][j+1] = 0;
+            loIterator++;
+        }
+    }
+
+    int lnBitsToOffset = (int)(log2(lnCacheRowEntries) + log2(BLOCK_SIZE));
+    for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
+    {
+        int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
+        int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
+        int lnPTTag = loIterator->second >> lnBitsToOffset;
+
+        int lnPreFetchPTIndex = (lnBlockAddress + 1) % lnCacheRowEntries;
+        int lnPreFetchPTTag = (loIterator->second + BLOCK_SIZE) >> lnBitsToOffset;
+
+        // Iterate through each "way" in the cache row
+        int *lanPageTableRow = lanPageTable[lnPTIndex];
+        int *lanPreFetchPTR = lanPageTable[lnPreFetchPTIndex];
+
+        bool lbEntryFound = false;
+        bool lbPreFetchEntryFound = false;
+
+        for (int i = 0; i < lnCacheRowLength; i += 2)
+        {
+            if (lanPageTableRow[i] == lnPTTag)
+            {
+                lnHit++;
+                lanPageTableRow[i + 1] = distance(gooInputs.begin(), loIterator);
+                lbEntryFound = true;
+                break; // Exit the for() as we have a hit
+            }
+        }
+
+        // If entry not found, will need to import it to the cache
+        if (! lbEntryFound)
+        {
+            for (int i = 0; i < lnCacheRowLength; i += 2)
+            {
+                if (lanPreFetchPTR[i] == lnPreFetchPTTag)
+                {
+                    lanPreFetchPTR[i + 1] = distance(gooInputs.begin(), loIterator);
+                    lbPreFetchEntryFound = true;
+                    break;
+                }
+            }
+
+            int lnIndexToReplaceValue = lanPageTableRow[1];
+            int lnIndexToReplace = 0;
+
+            for (int i = 0; i < lnCacheRowLength; i += 2)
+            {
+                if (lanPageTableRow[i+1] < lnIndexToReplaceValue)
+                {
+                    lnIndexToReplaceValue = lanPageTableRow[i+1];
+                    lnIndexToReplace = i;
+                }
+            }
+
+            lanPageTableRow[lnIndexToReplace] = lnPTTag;
+            lanPageTableRow[lnIndexToReplace + 1] = distance(gooInputs.begin(), loIterator);
+        }
+
+        if (! lbPreFetchEntryFound && ! lbEntryFound)
+        {
+            int lnIndexToReplaceValue = lanPreFetchPTR[1];
+            int lnIndexToReplace = 0;
+
+            for (int i = 0; i < lnCacheRowLength; i += 2)
+            {
+                if (lanPreFetchPTR[i+1] < lnIndexToReplaceValue)
+                {
+                    lnIndexToReplaceValue = lanPreFetchPTR[i+1];
+                    lnIndexToReplace = i;
+                }
+            }
+
+            lanPreFetchPTR[lnIndexToReplace] = lnPreFetchPTTag;
+            lanPreFetchPTR[lnIndexToReplace + 1] = distance(gooInputs.begin(), loIterator);
+        }
+    }
+
+    // Free dynamic 2D array
+    for (int i = 0; i < lnCacheRowEntries; i++)
+    {
+        delete[] lanPageTable[i];
+    }
+    delete[] lanPageTable;
+
+    return lnHit;
+}
