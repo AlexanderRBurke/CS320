@@ -1,11 +1,14 @@
 all: simulator
 
-debug: cache-sim simulator
-	./cache-sim trace2.txt DEBUG.txt
+run: t1 t2 t3
 
-run: cache-sim simulator
+t1: cache-sim simulator
 	./cache-sim trace1.txt my_trace1_output.txt
+
+t2: cache-sim simulator
 	./cache-sim trace2.txt my_trace2_output.txt
+
+t3: cache-sim simulator
 	./cache-sim trace3.txt my_trace3_output.txt
 
 gdb: cache-sim simulator

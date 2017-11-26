@@ -439,7 +439,7 @@ int Caches::setAssociativePrefetching(int anAssociativityEntries)
         for (int j = 0; j < lnCacheRowLength; j += 2)
         {
             lanPageTable[i][j] = loIterator->second;
-            lanPageTable[i][j+1] = 0;
+            lanPageTable[i][j+1] = -1;
             loIterator++;
         }
     }
@@ -554,7 +554,7 @@ int Caches::setAssociativePreOnMiss(int anAssociativityEntries)
         for (int j = 0; j < lnCacheRowLength; j += 2)
         {
             lanPageTable[i][j] = loIterator->second;
-            lanPageTable[i][j+1] = 0;
+            lanPageTable[i][j+1] = -1;
             loIterator++;
         }
     }
