@@ -1,5 +1,6 @@
 #include "caches.h"
 #include <cmath>
+#include <climits>
 
 #define BLOCK_SIZE 32
 
@@ -164,7 +165,7 @@ int Caches::setAssociative(int anAssociativityEntries)
             {
                 // Find the least recently used and overwrite it
                 int lnLeastRecentlyUsedIndex = 0;
-                int lnMinDistance = INT_MAX;
+                int lnMinDistance = INT32_MAX;
                 for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
                 {
                     if (lanPageTableRow[i + 2] < lnMinDistance)
@@ -380,7 +381,7 @@ int Caches::noAllocWriteMiss(int anAssociativityEntries)
             {
                 // Find the least recently used and overwrite it
                 int lnLeastRecentlyUsedIndex = 0;
-                int lnMinDistance = INT_MAX;
+                int lnMinDistance = INT32_MAX;
                 for (int i = 0; i < lnCacheRowLength; i += lnCacheRowLength / anAssociativityEntries)
                 {
                     if (lanPageTableRow[i + 2] < lnMinDistance)
