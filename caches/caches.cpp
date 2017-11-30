@@ -42,7 +42,7 @@ int Caches::directMapped(int anCacheEntries)
     }
 
     // Index.size + Offset.size
-    int lnBitsToOffset = (int)((log(anCacheEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
+    int lnBitsToOffset = (int)(log2(anCacheEntries) + log2(BLOCK_SIZE));
     for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
     {
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
@@ -69,7 +69,6 @@ int Caches::directMapped(int anCacheEntries)
             lanPageTable[lnPTIndex][0] = 1;
         }
     }
-
 
     // Free dynamic 2D array
     for (int i = 0; i < anCacheEntries; i++)
@@ -115,13 +114,13 @@ int Caches::setAssociative(int anAssociativityEntries)
         }
     }
 
+    int lnBitsToOffset = (int)(log2(lnCacheRowEntries) + log2(BLOCK_SIZE));
     for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
     {
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
         int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
 
         // Index.size + Offset.size
-        int lnBitsToOffset = (int)((log(lnCacheRowEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
         int lnPTTag = loIterator->second >> lnBitsToOffset;
 
         // Iterate through each "way" in the cache row
@@ -324,13 +323,13 @@ int Caches::noAllocWriteMiss(int anAssociativityEntries)
         }
     }
 
+    int lnBitsToOffset = (int)(log2(lnCacheRowEntries) + log2(BLOCK_SIZE));
     for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
     {
         int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
         int lnPTIndex = lnBlockAddress % lnCacheRowEntries;
 
         // Index.size + Offset.size
-        int lnBitsToOffset = (int)((log(lnCacheRowEntries)/log(2)) + (log(BLOCK_SIZE)/log(2)));
         int lnPTTag = loIterator->second >> lnBitsToOffset;
 
         // Iterate through each "way" in the cache row
