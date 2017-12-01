@@ -72,7 +72,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     }
     loOutputFile << "\n";
 
-    // Q2:
+    // Q2: Set Associative Cache of associativity 2, 4, 8, 16
     for (int i = 0; i < lanAssociativity.size(); i++)
     {
         loRetVal = aoCaches.setAssociative(lanAssociativity.at(i));
@@ -81,15 +81,15 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     }
     loOutputFile << "\n";
 
-    // Q3a:
+    // Q3a: Fully Associative Cache Least Recently Used (associativity of 512)
     loRetVal = aoCaches.fullAssociativeLRU();
     loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
 
-    // Q3b:
+    // Q3b: Fully Associative Cache Hot/Cold Bits
     loRetVal = aoCaches.fullAssociativeHCR();
     loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
 
-    // Q4:
+    // Q4: Set Associative Cache with no Allocation on a Write Miss
     for (int i = 0; i < lanAssociativity.size(); i++)
     {
         loRetVal = aoCaches.noAllocWriteMiss(lanAssociativity.at(i));
@@ -98,7 +98,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     }
     loOutputFile << "\n";
 
-    // Q5:
+    // Q5: Set Associative Cache with Next-line Prefetching
     for (int i = 0; i < lanAssociativity.size(); i++)
     {
         loRetVal = aoCaches.setAssociativePrefetching(lanAssociativity.at(i));
@@ -107,7 +107,7 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     }
     loOutputFile << "\n";
 
-    // Q6:
+    // Q6: Prefetch-on-a-Miss
     for (int i = 0; i < lanAssociativity.size(); i++)
     {
         loRetVal = aoCaches.setAssociativePreOnMiss(lanAssociativity.at(i));
@@ -116,6 +116,9 @@ void runCacheSimulator(Caches aoCaches, String asOutputFileName)
     }
     loOutputFile << "\n";
 
+    // BONUS: Clock Replacement Algorithm
+    loRetVal = aoCaches.secondChanceClocking();
+    loOutputFile << loRetVal << "," << aoCaches.getCountEntries() << ";\n";
 
     loOutputFile.close();
 }

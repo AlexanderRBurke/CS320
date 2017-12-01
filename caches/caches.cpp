@@ -644,3 +644,89 @@ int Caches::setAssociativePreOnMiss(int anAssociativityEntries)
 
     return lnHit;
 }
+
+int Caches::secondChanceClocking()
+{
+    /*
+     * https://oscourse.github.io/slides/page_replacement.pdf Slide 15
+     * The point of this replacement method is to have a list of entries and if one needs
+     * to be evicted we evict in order, but if the cache line was recently accessed we skip it
+     * and go onto the next one until we find one that was not recently accessed. If all of them
+     * were recently accessed, remove the starting element.
+     *
+     * This cache is still 16KB since we only store 512 entries (2^9) and the data size is 2^5
+     */
+
+    const int lnSetCount = 512;
+
+    // Row will be [TAG | REFERENCED | TAG | REFERENCED | ...]
+    const int lnCacheEntries = 2 * lnSetCount;
+
+    int lnHit = 0;
+
+    // Dynamic allocation of array
+    int *lanPageTable = new int[lnCacheEntries];
+
+    // Zero out new array
+    for (int j = 0; j < lnCacheEntries; j++)
+    {
+        lanPageTable[j] = 0;
+    }
+
+    // Index to start the "clock hand" at
+    int lnStartingIndex = 0;
+    int lnBitsToOffset = (int)(log2(lnSetCount) + log2(BLOCK_SIZE));
+    for (auto loIterator = gooInputs.begin(); loIterator != gooInputs.end(); loIterator++)
+    {
+        int lnBlockAddress = floor(loIterator->second / BLOCK_SIZE);
+        int lnPTIndex = lnBlockAddress % lnSetCount;
+        int lnPTTag = loIterator->second >> lnBitsToOffset;
+
+        bool lbEntryFound = false;
+        for (int i = 0; i < lnCacheEntries; i += 2)
+        {
+            if (lanPageTable[i] == lnPTTag)
+            {
+                lnHit++;
+                lanPageTable[i + 1] = 1;
+                lbEntryFound = true;
+                break; // Exit the for() as we have a hit
+            }
+        }
+
+        bool lbEntryInserted = false;
+        if (! lbEntryFound)
+        {
+            // Since we missed, we will resume from where the "clock hand" was and continue forward
+            // until we find a cache line that was not recently used. If all of them were recently
+            // used, we will evict the line at lnActualIndex.
+            for (int i = 0; i < lnCacheEntries; i += 2)
+            {
+                int lnActualIndex = (i + lnStartingIndex) % lnCacheEntries;
+
+                // If page was recently referenced
+                if (lanPageTable[lnActualIndex + 1] == 1)
+                {
+                    lanPageTable[lnActualIndex + 1] = 0;
+                }
+                else
+                {
+                    lanPageTable[lnActualIndex] = lnPTTag;
+                    lbEntryInserted = true;
+
+                    // Update the "clock hand" so it will resume from the next option if needed
+                    lnStartingIndex = (1 + lnActualIndex) % lnCacheEntries;
+                    break;
+                }
+            }
+        }
+
+        // This means we've exhausted the list, so we did a full clock spin.
+        if (! lbEntryInserted)
+        {
+            lanPageTable[lnStartingIndex] = lnPTTag;
+        }
+    }
+
+    return lnHit;
+}

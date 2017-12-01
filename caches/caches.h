@@ -22,6 +22,7 @@ class Caches
 		int noAllocWriteMiss(int);
         int setAssociativePrefetching(int);
 		int setAssociativePreOnMiss(int);
+		int secondChanceClocking();
 
     private:
         vector< pair<char, int> > gooInputs;
